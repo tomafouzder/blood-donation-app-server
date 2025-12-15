@@ -28,10 +28,12 @@ async function run() {
 
         const database = client.db('bloodDonationDB')
         const usersCollection = database.collection('users')
+        const requestCollection = database.collection('request')
 
         app.post('/users', async (req, res) => {
             const userInfo = req.body;
             userInfo.role = 'donor';
+            userInfo.status = 'active'
             userInfo.createAt = new Date();
 
             const result = await usersCollection.insertOne(userInfo)
@@ -46,6 +48,17 @@ async function run() {
             console.log(result)
             res.send(result)
         })
+
+        // Donor apis:
+
+        // request
+        app.post('/requests', async (req, res) => {
+            const data = req.body;
+            data.createAt = new Date();
+            const result = await requestCollection.insertOne(data)
+            res.send(result);
+        })
+
 
 
         // Send a ping to confirm a successful connection
