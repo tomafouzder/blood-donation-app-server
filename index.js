@@ -75,7 +75,7 @@ async function run() {
             res.status(200).send(result)
         })
 
-
+        // get for user role set
         app.get('/users/role/:email', async (req, res) => {
             const email = req.params.email
             console.log(email)
@@ -85,8 +85,24 @@ async function run() {
             res.send(result)
         })
 
-        // Donor apis:
+        // update status by admin
+        app.patch('/update/user/status', verifyFBToken, async (req, res) => {
+            const { email, status } = req.query;
+            const query = { email: email };
 
+            const updateStatus = {
+                $set: {
+                    status: status
+                }
+            }
+            const result = await usersCollection.updateOne(query, updateStatus)
+            res.send(result)
+        })
+
+
+
+
+        // DONOR APIS:
         // request
         app.post('/requests', verifyFBToken, async (req, res) => {
             const data = req.body;
