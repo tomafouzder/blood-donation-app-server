@@ -3,6 +3,8 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 const port = process.env.PORT || 3000
+const stripe = require('stripe')(process.env.STRIPE_SECRET);
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
@@ -100,15 +102,65 @@ async function run() {
         })
 
 
-
-
         // DONOR APIS:
-        // request
+        // send post request
         app.post('/requests', verifyFBToken, async (req, res) => {
             const data = req.body;
             data.createAt = new Date();
             const result = await requestCollection.insertOne(data)
             res.send(result);
+        })
+
+        // my-request 
+        app.get('/my-request', verifyFBToken, async (req, res) => {
+            const email = req.decoded_email;
+            const size = Number(req.query.size);
+            const page = Number(req.query.page);
+
+            const query = { requesterEmail: email };
+
+            const result = await requestCollection
+                .find(query)
+                .limit(size)
+                .skip(size * page)
+                .toArray();
+
+            const totalRequest = await requestCollection.countDocuments(query);
+
+            res.send({ request: result, totalRequest })
+        })
+
+
+        // PAYMENT APIS
+        // post payment 
+        app.post('/create-payment-checkout', async (req, res) => {
+            const information = req.body;
+            const amount = parseInt(information.donateAmount) * 100;
+
+            const session = await stripe.checkout.sessions.create({
+                line_items: [
+                    {
+                        price_data: {
+                            currency: 'usd',
+                            unit_amount: amount,
+                            product_data: {
+                                name: 'Please Donate'
+                            },
+                        },
+                        quantity: 1,
+                    },
+                ],
+                mode: 'payment',
+                metadata: {
+                    donorName: information?.donorName
+                },
+                customer_email: information?.userDonorEmail,
+                success_url: `${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`,
+            });
+
+            res.send({ url: session.url })
+
         })
 
 
