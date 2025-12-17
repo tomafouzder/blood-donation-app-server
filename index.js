@@ -59,11 +59,13 @@ async function run() {
         const database = client.db('bloodDonationDB')
         const usersCollection = database.collection('users')
         const requestCollection = database.collection('request')
+        const paymentsCollection = database.collection('payments')
+
 
         // user register data post 
         app.post('/users', async (req, res) => {
             const userInfo = req.body;
-            userInfo.role = 'donor';
+            userInfo.role = userInfo?.role || 'donor';
             userInfo.status = 'active'
             userInfo.createAt = new Date();
 
@@ -130,9 +132,36 @@ async function run() {
             res.send({ request: result, totalRequest })
         })
 
+        // get search-request donor info 
+        app.get('/search-requests', async (req, res) => {
+            const { bloodGroup, district, upazila } = req.query;
+
+            const query = {};
+
+            if (!query) {
+                return;
+            }
+
+            if (bloodGroup) {
+                const fixed = bloodGroup.replace(/ /g, "+").trim();
+                query.bloodGroup = fixed
+            }
+            if (district) {
+                query.district = district;
+            }
+            if (upazila) {
+                query.upazila = upazila;
+            }
+            console.log(query)
+
+            const result = await requestCollection.find(query).toArray();
+            res.send(result)
+        })
+
+
 
         // PAYMENT APIS
-        // post payment 
+        // post payment and create payment page
         app.post('/create-payment-checkout', async (req, res) => {
             const information = req.body;
             const amount = parseInt(information.donateAmount) * 100;
@@ -162,6 +191,39 @@ async function run() {
             res.send({ url: session.url })
 
         })
+
+        // post success payment and save database
+        app.post('/success-payment', async (req, res) => {
+            const { session_id } = req.query;
+            const session = await stripe.checkout.sessions.retrieve(
+                session_id
+            );
+            console.log(session);
+
+            const transactionId = session.payment_intent;
+
+            const isPaymentExist = await paymentsCollection.findOne({ transactionId })
+
+            if (isPaymentExist) {
+                return res.status(400).send('Already Exist')
+            }
+
+            if (session.payment_status == 'paid') {
+                const paymentInfo = {
+                    amount: session.amount_total / 100,
+                    currency: session.currency,
+                    donorEmail: session.customer_email,
+                    transactionId,
+                    payment_status: session.payment_status,
+                    paidAt: new Date(),
+                }
+
+                const result = await paymentsCollection.insertOne(paymentInfo)
+                return res.send(result)
+            }
+        })
+
+
 
 
 
