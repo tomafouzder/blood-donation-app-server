@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
@@ -77,6 +77,7 @@ async function run() {
             const result = await usersCollection.find().toArray();
             res.status(200).send(result)
         })
+
         // get for user role set
         app.get('/users/role/:email', async (req, res) => {
             const email = req.params.email
@@ -86,6 +87,8 @@ async function run() {
             console.log(result)
             res.send(result)
         })
+
+
         // update status by admin
         app.patch('/update/user/status', verifyFBToken, async (req, res) => {
             const { email, status } = req.query;
@@ -99,6 +102,8 @@ async function run() {
             const result = await usersCollection.updateOne(query, updateStatus)
             res.send(result)
         })
+
+
 
 
         // DONOR APIS:
@@ -142,6 +147,30 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         })
+
+        // update status
+        app.patch('/update/request/status', verifyFBToken, async (req, res) => {
+            const { id, status } = req.query;
+            const query = { _id: new ObjectId(id) };
+
+            const updateStatus = {
+                $set: {
+                    status: status
+                }
+            }
+            const result = await requestCollection.updateOne(query, updateStatus)
+            res.send(result)
+        })
+
+        // delete request
+        app.delete('/delete-request/:id', verifyFBToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+
+            const result = await requestCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // get search-request donor info  
         app.get('/search-requests', async (req, res) => {
             const { bloodGroup, district, upazila } = req.query;
@@ -167,6 +196,36 @@ async function run() {
             const result = await requestCollection.find(query).toArray();
             res.send(result)
         })
+
+
+        // ADMIN APIS
+        // all request 
+        app.get('/all-requests', async (req, res) => {
+            const size = Number(req.query.size);
+            const page = Number(req.query.page);
+
+            const query = {};
+
+            const result = await requestCollection
+                .find(query)
+                .limit(size)
+                .skip(size * page)
+                .toArray();
+            const total = await requestCollection.countDocuments(query);
+            res.status(200).send({ request: result, total })
+        })
+
+        // request details
+        app.get('/all-requests/:id', verifyToken, async (req, res) => {
+            const { id } = req.params;
+            console.log(id);
+            const result = await requestCollection.findOne({ _id: new ObjectId(id) })
+            res.send({
+                success: true,
+                result
+            })
+        })
+
 
 
 
