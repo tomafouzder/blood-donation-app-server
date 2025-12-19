@@ -72,13 +72,11 @@ async function run() {
             const result = await usersCollection.insertOne(userInfo)
             res.send(result)
         })
-
         // all user get
         app.get('/users', verifyFBToken, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.status(200).send(result)
         })
-
         // get for user role set
         app.get('/users/role/:email', async (req, res) => {
             const email = req.params.email
@@ -88,7 +86,6 @@ async function run() {
             console.log(result)
             res.send(result)
         })
-
         // update status by admin
         app.patch('/update/user/status', verifyFBToken, async (req, res) => {
             const { email, status } = req.query;
@@ -112,7 +109,6 @@ async function run() {
             const result = await requestCollection.insertOne(data)
             res.send(result);
         })
-
         // my-request 
         app.get('/my-request', verifyFBToken, async (req, res) => {
             const email = req.decoded_email;
@@ -131,8 +127,22 @@ async function run() {
 
             res.send({ request: result, totalRequest })
         })
+        //  resent-request for donor dashboard 
+        app.get('/resent-request', verifyFBToken, async (req, res) => {
+            const email = req.decoded_email;
+            const query = { requesterEmail: email };
 
-        // get search-request donor info 
+            const cursor = requestCollection
+                .find(query)
+                .sort({
+                    createdAt: -1,
+                    updatedAt: -1,
+                })
+                .limit(3);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+        // get search-request donor info  
         app.get('/search-requests', async (req, res) => {
             const { bloodGroup, district, upazila } = req.query;
 
@@ -191,7 +201,6 @@ async function run() {
             res.send({ url: session.url })
 
         })
-
         // post success payment and save database
         app.post('/success-payment', async (req, res) => {
             const { session_id } = req.query;
