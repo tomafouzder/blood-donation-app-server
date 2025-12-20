@@ -78,6 +78,48 @@ async function run() {
             res.status(200).send(result)
         })
 
+        // get single profile info
+        app.get('/users/profile', verifyFBToken, async (req, res) => {
+            const email = req.decoded_email;
+            const result = await usersCollection.findOne({ email });
+            res.send(result);
+        });
+        // update profile
+        app.put('/users/profile', verifyFBToken, async (req, res) => {
+            try {
+                const email = req.decoded_email;
+                const data = req.body;
+
+                if (!email) {
+                    return res.status(401).send({ message: "Unauthorized" });
+                }
+
+                delete data._id;
+                delete data.email;
+                delete data.password;
+                delete data.role;
+                delete data.status;
+                delete data.createAt;
+
+                data.updatedAt = new Date();
+
+                const result = await usersCollection.updateOne(
+                    { email },
+                    { $set: data }
+                );
+
+                res.send({
+                    success: true,
+                    matchedCount: result.matchedCount,
+                    modifiedCount: result.modifiedCount
+                });
+
+            } catch (error) {
+                console.error("PROFILE UPDATE ERROR:", error);
+                res.status(500).send({ message: "Internal Server Error" });
+            }
+        });
+
         // get for user role set
         app.get('/users/role/:email', async (req, res) => {
             const email = req.params.email
@@ -87,8 +129,6 @@ async function run() {
             console.log(result)
             res.send(result)
         })
-
-
         // update status by admin
         app.patch('/update/user/status', verifyFBToken, async (req, res) => {
             const { email, status } = req.query;
