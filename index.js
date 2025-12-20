@@ -122,13 +122,14 @@ async function run() {
 
         // get for user role set
         app.get('/users/role/:email', async (req, res) => {
-            const email = req.params.email
-            console.log(email)
+            const email = req.params.email;
             const query = { email: email }
+
             const result = await usersCollection.findOne(query)
-            console.log(result)
+           
             res.send(result)
         })
+        
         // update status by admin
         app.patch('/update/user/status', verifyFBToken, async (req, res) => {
             const { email, status } = req.query;
