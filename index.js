@@ -105,6 +105,56 @@ async function run() {
 
 
 
+        // ADMIN APIS
+        // all request 
+        app.get('/all-requests', async (req, res) => {
+            const size = Number(req.query.size);
+            const page = Number(req.query.page);
+
+            const query = {};
+
+            const result = await requestCollection
+                .find(query)
+                .limit(size)
+                .skip(size * page)
+                .toArray();
+            const total = await requestCollection.countDocuments(query);
+            res.status(200).send({ request: result, total })
+        })
+
+        // request details
+        app.get('/all-requests/:id', verifyFBToken, async (req, res) => {
+            const { id } = req.params;
+            console.log(id);
+            const result = await requestCollection.findOne({ _id: new ObjectId(id) })
+            res.send({
+                success: true,
+                result
+            })
+        })
+
+        // update all request info
+        app.put('/all-requests/:id', verifyFBToken, async (req, res) => {
+            const { id } = req.params
+            const data = req.body
+            const objectId = new ObjectId(id)
+            const filter = { _id: objectId }
+
+            data.updatedAt = new Date();
+
+            const update = {
+                $set: data
+            }
+            const result = await requestCollection.updateOne(filter, update)
+            res.send({
+
+                success: true,
+                matchedCount: result.matchedCount,
+                modifiedCount: result.modifiedCount
+            })
+        })
+
+
 
         // DONOR APIS:
         // send post request
@@ -198,33 +248,6 @@ async function run() {
         })
 
 
-        // ADMIN APIS
-        // all request 
-        app.get('/all-requests', async (req, res) => {
-            const size = Number(req.query.size);
-            const page = Number(req.query.page);
-
-            const query = {};
-
-            const result = await requestCollection
-                .find(query)
-                .limit(size)
-                .skip(size * page)
-                .toArray();
-            const total = await requestCollection.countDocuments(query);
-            res.status(200).send({ request: result, total })
-        })
-
-        // request details
-        app.get('/all-requests/:id', verifyToken, async (req, res) => {
-            const { id } = req.params;
-            console.log(id);
-            const result = await requestCollection.findOne({ _id: new ObjectId(id) })
-            res.send({
-                success: true,
-                result
-            })
-        })
 
 
 
@@ -290,6 +313,8 @@ async function run() {
                 return res.send(result)
             }
         })
+
+
 
 
 
