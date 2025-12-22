@@ -72,6 +72,7 @@ async function run() {
             const result = await usersCollection.insertOne(userInfo)
             res.send(result)
         })
+
         // all user get
         app.get('/users', verifyFBToken, async (req, res) => {
             const result = await usersCollection.find().toArray();
@@ -84,6 +85,7 @@ async function run() {
             const result = await usersCollection.findOne({ email });
             res.send(result);
         });
+
         // update profile
         app.put('/users/profile', verifyFBToken, async (req, res) => {
             try {
@@ -126,10 +128,10 @@ async function run() {
             const query = { email: email }
 
             const result = await usersCollection.findOne(query)
-           
+
             res.send(result)
         })
-        
+
         // update status by admin
         app.patch('/update/user/status', verifyFBToken, async (req, res) => {
             const { email, status } = req.query;
@@ -189,12 +191,15 @@ async function run() {
         })
         // update status
         app.patch('/update/request/status', verifyFBToken, async (req, res) => {
-            const { id, status } = req.query;
+            const { id, status, donorName, donorEmail } = req.body;
             const query = { _id: new ObjectId(id) };
 
             const updateStatus = {
                 $set: {
-                    status: status
+                    status: status,
+                    donorName: donorName,
+                    donorEmail: donorEmail,
+                    updatedAt: new Date()
                 }
             }
             const result = await requestCollection.updateOne(query, updateStatus)
@@ -251,7 +256,6 @@ async function run() {
             const total = await requestCollection.countDocuments(query);
             res.status(200).send({ request: result, total })
         })
-
         // request details
         app.get('/all-requests/:id', verifyFBToken, async (req, res) => {
             const { id } = req.params;
@@ -262,7 +266,6 @@ async function run() {
                 result
             })
         })
-
         // update all request info
         app.put('/all-requests/:id', verifyFBToken, async (req, res) => {
             const { id } = req.params;
