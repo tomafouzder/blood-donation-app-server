@@ -239,6 +239,21 @@ async function run() {
             res.send(result)
         })
 
+        // pending donation request 
+        app.get('/donation-requests', async (req, res) => {
+            try {
+
+                const query = { status: "pending" };
+
+                const result = await requestCollection.find(query).toArray();
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ error: 'Something went wrong' });
+            }
+        });
+
+
 
         // ADMIN APIS
         // all request 
